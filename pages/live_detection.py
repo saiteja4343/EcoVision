@@ -10,18 +10,55 @@ from src.logic.emissions_calculator import calculate_emissions, export_data
 
 def live_detection_page(model, confidence, class_filter, co2_data, cam_choice):
     st.header("Live Camera Analysis")
-    processing_mode = st.radio("Mode:", ["Live Detection", "Capture & Process"], horizontal=True)
+    # processing_mode = st.radio("Mode:", ["Live Detection", "Capture & Process"], horizontal=True)
+    #
+    # # Create fixed layout containers
+    # frame_placeholder = st.empty()
+    # status_placeholder = st.empty()
+    #
+    # if processing_mode == "Live Detection":
+    #     handle_live_detection(frame_placeholder, status_placeholder, model,
+    #                         confidence, class_filter, co2_data, cam_choice)
+    # else:
+    #     handle_capture_process(frame_placeholder, status_placeholder, model,
+    #                          confidence, class_filter, co2_data, cam_choice)
 
-    # Create fixed layout containers
+    # Radio button container at the top
+    with st.container():
+        processing_mode = st.radio("Mode:", ["Live Detection", "Capture & Process"],
+                                   horizontal=True, key="proc_mode")
+
+    # Fixed controls container below radio buttons
+    controls_container = st.container()
+
+    # Create fixed frame placeholder below controls
     frame_placeholder = st.empty()
     status_placeholder = st.empty()
 
     if processing_mode == "Live Detection":
-        handle_live_detection(frame_placeholder, status_placeholder, model, 
-                            confidence, class_filter, co2_data, cam_choice)
+        with controls_container:
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Start Camera Feed", key="start_cam"):
+                    st.session_state.camera_active = True
+            with col2:
+                if st.button("Stop Camera", key="stop_cam"):
+                    st.session_state.camera_active = False
+
+        handle_live_detection(frame_placeholder, status_placeholder, model,
+                              confidence, class_filter, co2_data, cam_choice)
     else:
+        with controls_container:
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Start Camera Feed", key="start_cam"):
+                    st.session_state.camera_active = True
+            with col2:
+                if st.button("Stop Camera", key="stop_cam"):
+                    st.session_state.camera_active = False
+
         handle_capture_process(frame_placeholder, status_placeholder, model,
-                             confidence, class_filter, co2_data, cam_choice)
+                               confidence, class_filter, co2_data, cam_choice)
 
 def handle_live_detection(frame_placeholder, status_placeholder, model, confidence,
                         class_filter, co2_data, cam_choice):
@@ -29,14 +66,35 @@ def handle_live_detection(frame_placeholder, status_placeholder, model, confiden
     emissions_metric = st.empty()
     export_placeholder = st.empty()
 
-    # Camera control buttons
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Start Camera Feed", key="start_cam"):
-            st.session_state.camera_active = True
-    with col2:
-        if st.button("Stop Camera", key="stop_cam"):
-            st.session_state.camera_active = False
+    # # Create fixed container for camera controls at the top
+    # button_container = st.container()
+    #
+    # with button_container:
+    #
+    #     # Camera control buttons
+    #     col1, col2, _ = st.columns([1,1,6])
+    #     with col1:
+    #         if st.button("Start Camera Feed", key="start_cam"):
+    #             st.session_state.camera_active = True
+    #     with col2:
+    #         if st.button("Stop Camera", key="stop_cam"):
+    #             st.session_state.camera_active = False
+
+    # # Fixed column definition outside conditional blocks
+    # control_col1, control_col2 = st.columns([1, 1])
+    #
+    # # Persistent button container
+    # with control_col1.container():
+    #     if not st.session_state.get('camera_active', False):
+    #         if st.button("Start Camera Feed", key="start_cam"):
+    #             st.session_state.camera_active = True
+    #             st.rerun()
+    #
+    # with control_col2.container():
+    #     if st.session_state.get('camera_active', False):
+    #         if st.button("Stop Camera", key="stop_cam"):
+    #             st.session_state.camera_active = False
+    #             st.rerun()
 
     if st.session_state.get('camera_active', False):
         status_placeholder.info("Live detection active - processing frames...")
@@ -128,18 +186,24 @@ def handle_live_detection(frame_placeholder, status_placeholder, model, confiden
 def handle_capture_process(frame_placeholder, status_placeholder, model, confidence,
                          class_filter, co2_data, cam_choice):
 
+
+
+    # # Fixed control container
+    # control_container = st.container()
+    #
+    # with control_container:
+    #
+    #     # Camera control buttons
+    #     col1, col2, _ = st.columns([1,1,6])
+    #     with col1:
+    #         if st.button("Start Camera Feed", key="start_cam"):
+    #             st.session_state.camera_active = True
+    #     with col2:
+    #         if st.button("Stop Camera", key="stop_cam"):
+    #             st.session_state.camera_active = False
+
     """Handles frame capture and processing workflow"""
     capture_btn = st.empty()
-
-
-    # Camera control buttons
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Start Camera Feed", key="start_cam"):
-            st.session_state.camera_active = True
-    with col2:
-        if st.button("Stop Camera", key="stop_cam"):
-            st.session_state.camera_active = False
 
     if st.session_state.get('camera_active', False):
         status_placeholder.info("Camera active - ready to capture")
