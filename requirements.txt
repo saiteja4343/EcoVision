@@ -1,5 +1,5 @@
 # Core Requirements
-streamlit>=1.33.0
+streamlit==1.38.0
 ultralytics>=8.2.0
 torch>=2.2.0
 torchvision>=0.17.0
@@ -14,6 +14,10 @@ pandas>=2.2.0
 xlsxwriter>=3.2.0
 openpyxl>=3.1.2
 
-# Additional Utilities
-python-multipart>=0.0.9
-tqdm>=4.66.0  # For progress bars in model processing
+streamlit-webrtc==0.48.1
+aiortc==1.5.0
+pyav==12.0.0
+twilio==8.3.0
+requests==2.31.0
+protobuf==3.20.3
+

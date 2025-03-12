@@ -7,6 +7,13 @@ from src.components.sidebar import create_sidebar
 from src.logic.model_loader import load_model
 from src.logic.data_loader import load_co2_data
 import pandas as pd
+from src.components.camera_controls import get_camera_settings, get_twilio_client
+
+import os
+
+# Add Twilio credentials to environment
+os.environ["TWILIO_ACCOUNT_SID"] = "your-twilio-key-here"
+os.environ["TWILIO_AUTH_TOKEN"] = "your-twilio-key-here"
 
 
 def main():
@@ -17,6 +24,12 @@ def main():
         layout="wide"
     )
 
+    try:
+        twilio_client = get_twilio_client()
+        twilio_client.messages.list(limit=1)  # Simple API call to validate credentials
+    except Exception as e:
+        st.error(f"Twilio connection failed: {str(e)}")
+        st.stop()
 
     # Apply custom theme
     apply_custom_theme()
@@ -28,8 +41,14 @@ def main():
     co2_data = load_co2_data()
     models = get_available_models()
 
+    # # Add camera settings to session state
+    # st.session_state.camera_config = get_camera_settings()
+
+
+
     # Create sidebar components
-    selected_model, confidence, class_filter, cam_choice = create_sidebar(co2_data, models)
+    #selected_model, confidence, class_filter, cam_choice = create_sidebar(co2_data, models)
+    selected_model, confidence, class_filter = create_sidebar(co2_data, models)
 
     # Load selected model
     model = load_model(os.path.join(PATHS['models'], selected_model))
@@ -45,7 +64,8 @@ def main():
         image_analysis_page(model, confidence, class_filter, co2_data)
     else:
         from pages.live_detection import live_detection_page
-        live_detection_page(model, confidence, class_filter, co2_data, cam_choice)
+        #live_detection_page(model, confidence, class_filter, co2_data, cam_choice)
+        live_detection_page(model, confidence, class_filter, co2_data)
 
 
 def apply_custom_theme():

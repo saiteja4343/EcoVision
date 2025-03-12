@@ -20,22 +20,22 @@ THEME = {
     'border_radius': '8px'
 }
 
-# Model default parameters
-MODEL_CONFIG = {
-    'default_confidence': 0.5,
-    'default_imgsz': 640,
-    'frame_skip': 2
-}
+# # Model default parameters
+# MODEL_CONFIG = {
+#     'default_confidence': 0.5,
+#     'default_imgsz': 640,
+#     'frame_skip': 2
+# }
 
-# Camera configurations
-CAMERA_SETTINGS = {
-    'default_resolution': (640, 480),
-    'max_cameras_to_check': 4,
-    'frame_delay': 0.03
-}
-
-# CO2 calculation defaults
-EMISSION_FACTORS = {
-    'default_weight_unit': 'kg',
-    'co2_unit': 'kg CO₂ eq'
-}
+# # Camera configurations
+# CAMERA_SETTINGS = {
+#     'default_resolution': (640, 480),
+#     'max_cameras_to_check': 4,
+#     'frame_delay': 0.03
+# }
+#
+# # CO2 calculation defaults
+# EMISSION_FACTORS = {
+#     'default_weight_unit': 'kg',
+#     'co2_unit': 'kg CO₂ eq'
+# }
