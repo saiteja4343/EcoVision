@@ -19,9 +19,9 @@ def image_analysis_page(model, confidence, class_filter, co2_data):
             col1, col2 = st.columns(2)
             with col1:
                 st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB),
-                         caption="Original Image", use_container_width=True)
+                         caption="Original Image", use_column_width=True)#, use_container_width=True)
             with col2:
-                st.image(output, caption="Processed Result", use_container_width=True)
+                st.image(output, caption="Processed Result", use_column_width=True)#, use_container_width=True)
 
             # Emissions report
             emissions_df, total_co2 = calculate_emissions(results, model, co2_data)
