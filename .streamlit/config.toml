@@ -1,2 +1,13 @@
 [client]
 showSidebarNavigation = false
+
+[theme]
+# Explicitly set all color parameters
+primaryColor = "#2E86AB"        # Custom accent color
+secondaryColor = "#A23B72"      # Custom accent color
+backgroundColor = '#0E1117'     # Pure white main background
+secondaryBackgroundColor = "#262730"  # Light gray for sidebars
+textColor = "#FAFAFA"           # Black text
+font = "Helvetica"
+borderRadius = "8px"
+

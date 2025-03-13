@@ -2,7 +2,7 @@
 import os
 import sys
 import streamlit as st
-from src.config import PATHS, THEME
+from src.config import THEME
 from src.components.sidebar import create_sidebar
 from src.logic.model_loader import load_model
 from src.logic.data_loader import load_co2_data
@@ -57,6 +57,9 @@ def main():
         from pages.live_detection import live_detection_page
         live_detection_page(model, confidence, class_filter, co2_data, cam_choice)
 
+    st.markdown("---")
+    st.caption("Copyright © 2025 Kuenneth Research Group, University of Bayreuth. All rights reserved. Created by Naga Sai Teja Kolakaleti.")
+
 
 def apply_custom_theme():
     """Applies custom CSS theme from config"""
@@ -86,7 +89,6 @@ def apply_custom_theme():
     </style>
     """, unsafe_allow_html=True)
 
-
 def init_session_state():
     """Initializes all required session state variables"""
     defaults = {
@@ -110,7 +112,6 @@ def get_available_models(repo_id = "nagasaiteja999/EcoVision"):
         st.error("No models found in models directory")
         st.stop()
     return models
-
 
 if __name__ == "__main__":
     # Add project root to Python path
