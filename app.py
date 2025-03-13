@@ -7,7 +7,7 @@ from src.components.sidebar import create_sidebar
 from src.logic.model_loader import load_model
 from src.logic.data_loader import load_co2_data
 import pandas as pd
-
+from huggingface_hub import hf_hub_download, list_repo_files
 
 def main():
     # Initialize app configuration
@@ -17,6 +17,9 @@ def main():
         layout="wide"
     )
 
+    # Configuration
+    REPO_ID = "nagasaiteja999/EcoVision"
+    CACHE_DIR = "model_cache"  # For downloaded model storage
 
     # Apply custom theme
     apply_custom_theme()
@@ -26,13 +29,20 @@ def main():
 
     # Load required data
     co2_data = load_co2_data()
-    models = get_available_models()
+    models = get_available_models(repo_id = REPO_ID)
 
     # Create sidebar components
     selected_model, confidence, class_filter, cam_choice = create_sidebar(co2_data, models)
 
+    #Load model from Hugging Face Hub with optional authentication
+    model_path = hf_hub_download(
+        repo_id=REPO_ID,
+        filename=selected_model,
+        cache_dir=CACHE_DIR,
+    )
+
     # Load selected model
-    model = load_model(os.path.join(PATHS['models'], selected_model))
+    model = load_model(model_path)
 
     # Main app interface
     st.title("🌱 EcoVision AI")
@@ -92,9 +102,10 @@ def init_session_state():
             st.session_state[key] = value
 
 
-def get_available_models():
+def get_available_models(repo_id = "nagasaiteja999/EcoVision"):
     """Retrieves available YOLO models from models directory"""
-    models = [f for f in os.listdir(PATHS['models']) if f.endswith('.pt')]
+    #models = [f for f in os.listdir(PATHS['models']) if f.endswith('.pt')]
+    models = [f for f in list_repo_files(repo_id) if f.endswith('.pt')]
     if not models:
         st.error("No models found in models directory")
         st.stop()

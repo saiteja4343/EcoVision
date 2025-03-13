@@ -127,7 +127,7 @@ def handle_live_detection(frame_placeholder, status_placeholder, model, confiden
                     results, output = process_image(frame, model, confidence, class_filter, co2_data)
 
                     if results is not None:
-                        frame_placeholder.image(output, channels="RGB", use_container_width=True)
+                        frame_placeholder.image(output, channels="RGB", use_column_width=True)#, use_container_width=True)
 
                         current_time = time.time()
                         if current_time - last_update_time > 1:
@@ -149,7 +149,7 @@ def handle_live_detection(frame_placeholder, status_placeholder, model, confiden
                                                         f"{total_co2:.2f} kg CO₂ eq")
                     else:
                         display_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                        frame_placeholder.image(display_frame, channels="RGB", use_container_width=True)
+                        frame_placeholder.image(display_frame, channels="RGB", use_column_width=True)#, use_container_width=True)
 
                 time.sleep(0.03)
 
@@ -168,7 +168,7 @@ def handle_live_detection(frame_placeholder, status_placeholder, model, confiden
             if st.session_state.last_frame is not None:
                 results, output = process_image(st.session_state.last_frame, model, confidence, class_filter, co2_data)
                 if output is not None:
-                    frame_placeholder.image(output, channels="RGB", use_container_width=True)
+                    frame_placeholder.image(output, channels="RGB", use_column_width=True)#, use_container_width=True)
 
             emissions_table.dataframe(
                 st.session_state.emissions_df.style.format({
@@ -241,7 +241,7 @@ def handle_capture_process(frame_placeholder, status_placeholder, model, confide
                 display_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frame_placeholder.image(display_frame,
                                         channels="RGB",
-                                        use_container_width=True)
+                                        use_column_width=True)#, use_container_width=True)
                 time.sleep(0.03)  # Prevent UI freeze
 
         except Exception as e:
@@ -268,11 +268,11 @@ def handle_capture_process(frame_placeholder, status_placeholder, model, confide
             with col1:
                 st.image(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB),
                          caption="Captured Frame",
-                         use_container_width=True)
+                         use_column_width=True)#, use_container_width=True)
             with col2:
                 st.image(output,
                          caption="Processed Result",
-                         use_container_width=True)
+                         use_column_width=True)#, use_container_width=True)
 
             # Generate emissions report
             emissions_df, total_co2 = calculate_emissions(results, model, co2_data)
