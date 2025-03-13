@@ -45,7 +45,7 @@ def main():
     model = load_model(model_path)
 
     # Main app interface
-    st.title("🌱 EcoVision AI")
+    st.title("🌱 EcoVision AI 1")
 
     # Page routing
     page = st.sidebar.selectbox("Choose Mode", ["Image Analysis", "Live Detection"])
