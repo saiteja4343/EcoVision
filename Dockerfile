@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY * .
+COPY ./ ./
 
 RUN pip3 install -r requirements.txt
 
