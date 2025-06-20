@@ -9,6 +9,8 @@ from src.logic.data_loader import load_co2_data
 import pandas as pd
 from huggingface_hub import hf_hub_download, list_repo_files
 
+# add dummy comment
+
 def main():
     # Initialize app configuration
     st.set_page_config(
