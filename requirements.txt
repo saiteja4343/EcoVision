@@ -14,3 +14,23 @@ pandas>=2.2.0
 xlsxwriter>=3.2.0
 openpyxl>=3.1.2
 huggingface_hub>=0.29.3
+
+# WebRTC for cloud deployment and camera access
+streamlit-webrtc>=0.48.1
+av>=10.0.0
+
+# Depth Estimation for Advanced Weight Calculation (Segmentation)
+transformers>=4.35.0
+accelerate>=0.20.0
+
+# Additional dependencies for WebRTC stability
+aiortc>=1.6.0
+aioice>=0.9.0
+
+# Scientific computing (required by transformers and depth models)
+scipy>=1.11.0
+scikit-learn>=1.3.0
+
+# Image processing for depth estimation
+imageio>=2.31.0
+matplotlib>=3.7.0
