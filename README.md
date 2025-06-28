@@ -81,11 +81,18 @@ EcoVision/
 ├── 📁 pages/
 │   ├── image_analysis.py       # Image upload analysis
 │   └── live_detection.py       # Live camera detection
+├── 📁 training_pipeline/
+│   ├── 📁 data_processing        # Dataset generation and processing
+│   └── 📁 model_training         # Training and Evaluation of YOLO model
 ├── app.py                      # Main application entry
 ├── requirements.txt            # Python dependencies
 └── README.md                   # This file
 
 ```
+
+## 📈 Dataset and Training Pipeline
+
+For information and code, click [here](./training_pipeline)
 
 ## 🧠 Technical Details
 
