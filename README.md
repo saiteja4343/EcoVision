@@ -1,7 +1,6 @@
 # EcoVision
 
-````markdown
-
+Heading
 ```mermaid
 graph TD;
     A[Roboflow Dataset Bounding Boxes] --> B[SAM 2.1 Bbox to Segmentation];
@@ -14,4 +13,3 @@ graph TD;
 
 ```
 
-````
