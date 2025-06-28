@@ -1,0 +1,24 @@
+# YOLOv10/v11 Food Recognition Dataset Configuration
+# Dataset: 45 Food Classes for Carbon Footprint Analysis
+
+# Dataset paths (relative to this config file)
+path: /path/to/dataset/
+train: train/images
+test: test/images
+val: valid/images
+
+# Number of classes
+nc: 45
+
+# Class names (45 food categories)
+names: [
+  'Apple', 'Asparagus', 'Avocado', 'Banana', 'Beans', 'Beetroot', 'Bell_pepper', 
+  'Blueberry', 'Broccoli', 'Brussel_sprouts', 'Cabbage', 'Carrot', 'Cauliflower', 
+  'Celery', 'Cucumber', 'Eggplant', 'Galia', 'Garlic', 'Ginger', 'Grapefruit', 
+  'Grapes', 'Kaki', 'Kiwi', 'Lemon', 'Lettuce', 'Mango', 'Melon', 'Mushroom', 
+  'Onion', 'Orange', 'Passion_fruit', 'Peach', 'Pear', 'Peas', 'Pineapple', 
+  'Plum', 'Pomegranate', 'Potato', 'Pumpkin', 'Radish', 'Raspberry', 'Strawberry', 
+  'Tomato', 'Watermelon', 'Zucchini'
+]
+
+\
