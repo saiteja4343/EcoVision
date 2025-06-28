@@ -94,6 +94,10 @@ EcoVision/
 
 For information and code, click [here](./training_pipeline)
 
+## Project Architecture
+
+![img.png](./assests/architecture.png)
+
 ## 🧠 Technical Details
 
 ### Detection Modes

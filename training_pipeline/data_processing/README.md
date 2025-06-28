@@ -37,6 +37,12 @@ graph TD;
 - **Quality Control**: Remove duplicates and low-quality annotations
 - **Location**: `data_preprocessing/`
 
+## 📈 Datasets
+
+For initial bounding boxes dataset, click [here](https://universe.roboflow.com/yolov8dataset-8uxqu/f_v_added_2)
+
+For synthetic generated dataset, click [here](https://universe.roboflow.com/yolov8dataset-8uxqu/syn-gen)
+
 ## 🔧 Requirements
 
 ### Core ML libraries
