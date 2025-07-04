@@ -5,9 +5,12 @@ from PIL import Image, ImageDraw
 from transformers import pipeline
 import torch
 import cv2
+from scipy.spatial import ConvexHull
+from sklearn.cluster import DBSCAN
+import open3d as o3d
 import streamlit as st
 
-# Class mapping exactly as you provided
+# Class mapping for YOLO model - your exact list
 CLASS_NAMES = [
     'Apple', 'Asparagus', 'Avocado', 'Banana', 'Beans', 'Beetroot', 'Bell_pepper', 'Blueberry', 'Broccoli',
     'Brussel_sprouts', 'Cabbage', 'Carrot', 'Cauliflower', 'Celery', 'Cucumber', 'Eggplant', 'Galia', 'Garlic',
@@ -66,59 +69,157 @@ def parse_yolo_mask_from_results(yolo_result, img_width, img_height):
     
     return objects
 
-def polygon_area(polygon):
-    """Compute polygon area using shoelace formula - your exact implementation"""
-    if len(polygon) < 3:
-        return 0
+def get_camera_intrinsics(img_width, img_height, fov_horizontal=60, fov_vertical=None):
+    """
+    Calculate camera intrinsic parameters from FOV - your exact function
+    """
+    if fov_vertical is None:
+        # Assume 4:3 aspect ratio for vertical FOV calculation
+        fov_vertical = fov_horizontal * (img_height / img_width) * (3/4)
     
-    x, y = zip(*polygon)
-    return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
+    # Convert FOV to focal length
+    fx = img_width / (2 * np.tan(np.deg2rad(fov_horizontal) / 2))
+    fy = img_height / (2 * np.tan(np.deg2rad(fov_vertical) / 2))
+    cx = img_width / 2
+    cy = img_height / 2
+    
+    return np.array([[fx, 0, cx],
+                     [0, fy, cy],
+                     [0, 0, 1]])
 
-def estimate_scale(depth_map, mask, polygon):
-    """Estimate scale using depth map - your exact implementation"""
-    # Mask out the object in the depth map
-    mask_img = Image.new('L', (depth_map.shape[1], depth_map.shape[0]), 0)
+def depth_to_pointcloud(depth_map, camera_intrinsics, mask=None):
+    """
+    Convert depth map to 3D point cloud using camera intrinsics - your exact function
+    """
+    h, w = depth_map.shape
+    
+    # Create pixel coordinates
+    u, v = np.meshgrid(np.arange(w), np.arange(h))
+    
+    # Apply mask if provided
+    if mask is not None:
+        u = u[mask > 0]
+        v = v[mask > 0]
+        depth = depth_map[mask > 0]
+    else:
+        u = u.flatten()
+        v = v.flatten()
+        depth = depth_map.flatten()
+    
+    # Convert to homogeneous coordinates
+    pixel_coords = np.vstack([u, v, np.ones_like(u)])
+    
+    # Convert to camera coordinates
+    cam_coords = np.linalg.inv(camera_intrinsics) @ pixel_coords
+    
+    # Scale by depth
+    points_3d = cam_coords * depth.reshape(1, -1)
+    
+    return points_3d.T  # Return as Nx3 array
+
+def estimate_volume_divespot(points_3d, method='convex_hull'):
+    """
+    DIVESPOT-inspired volume estimation using different methods - your exact function
+    """
+    if len(points_3d) < 4:
+        return 0.0
+    
+    try:
+        if method == 'convex_hull':
+            # Method 1: Convex Hull Volume (most robust)
+            hull = ConvexHull(points_3d)
+            return hull.volume
+            
+        elif method == 'alpha_shape':
+            # Method 2: Alpha Shape Volume (more accurate for complex shapes)
+            pcd = o3d.geometry.PointCloud()
+            pcd.points = o3d.utility.Vector3dVector(points_3d)
+            
+            # Compute alpha shape
+            alpha = 0.1  # Adjust based on point density
+            mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_alpha_shape(pcd, alpha)
+            
+            if mesh.is_watertight():
+                return mesh.get_volume()
+            else:
+                # Fallback to convex hull
+                return estimate_volume_divespot(points_3d, 'convex_hull')
+                
+        elif method == 'voxel_grid':
+            # Method 3: Voxel-based Volume Estimation
+            pcd = o3d.geometry.PointCloud()
+            pcd.points = o3d.utility.Vector3dVector(points_3d)
+            
+            # Create voxel grid
+            voxel_size = 0.01  # 1cm voxels
+            voxel_grid = o3d.geometry.VoxelGrid.create_from_point_cloud(pcd, voxel_size)
+            
+            num_voxels = len(voxel_grid.get_voxels())
+            return num_voxels * (voxel_size ** 3)
+            
+    except Exception as e:
+        print(f"Volume estimation failed with method {method}: {e}")
+        # Fallback to simple bounding box volume
+        bbox_min = np.min(points_3d, axis=0)
+        bbox_max = np.max(points_3d, axis=0)
+        return np.prod(bbox_max - bbox_min) * 0.5  # Assume 50% fill ratio
+
+def process_depth_map(depth_map, polygon, img_width, img_height, scale_factor=1.0):
+    """
+    Process depth map with better scaling and filtering - your exact function
+    """
+    # Create mask from polygon
+    mask_img = Image.new('L', (img_width, img_height), 0)
     ImageDraw.Draw(mask_img).polygon(polygon, outline=1, fill=1)
     mask_arr = np.array(mask_img)
-    masked_depth = depth_map * mask_arr
-    # Use median depth of the object
-    valid_depths = masked_depth[mask_arr > 0]
-    if len(valid_depths) > 0:
-        object_depth = np.median(valid_depths)
-        return object_depth  # in meters (if depth map is metric)
-    else:
-        return 1.0  # Default depth
+    
+    # Apply morphological operations to clean mask
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    mask_arr = cv2.morphologyEx(mask_arr.astype(np.uint8), cv2.MORPH_CLOSE, kernel)
+    
+    # Resize depth map to match image dimensions if needed
+    if depth_map.shape[:2] != (img_height, img_width):
+        depth_map = cv2.resize(depth_map, (img_width, img_height))
+    
+    # Normalize and scale depth map
+    depth_map = depth_map.astype(np.float32)
+    depth_map = (depth_map - depth_map.min()) / (depth_map.max() - depth_map.min())
+    
+    # Apply realistic depth scaling based on camera setup
+    min_depth, max_depth = 0.2, 3.0  # Adjust based on your camera setup
+    depth_map = min_depth + depth_map * (max_depth - min_depth)
+    depth_map *= scale_factor
+    
+    # Apply Gaussian smoothing to reduce noise
+    depth_map = cv2.GaussianBlur(depth_map, (3, 3), 0)
+    
+    return depth_map, mask_arr
 
-def estimate_real_area(polygon, depth, img_width, img_height, fov=60):
-    """Estimate real-world area - your exact implementation"""
-    # FOV is camera horizontal field of view in degrees (adjust as needed)
-    # Calculate pixel size at given depth
-    fov_rad = np.deg2rad(fov)
-    sensor_width = 2 * depth * np.tan(fov_rad / 2)
-    pixel_size = sensor_width / img_width  # meters per pixel
-    area_pixels = polygon_area(polygon)
-    area_m2 = area_pixels * (pixel_size ** 2)
-    return area_m2
+def get_density_for_class(class_name, co2_data):
+    """Get density value for a class from the CO2 data"""
+    try:
+        # Match class name with foodstuff in data
+        matched = co2_data[co2_data['Foodstuff'].str.lower() == class_name.lower()]
+        if not matched.empty:
+            return matched['Density'].values[0]  # Density in g/cm³
+        else:
+            return 0.8  # Default density
+    except Exception:
+        return 0.8  # Default density on error
 
-def estimate_volume(area_m2, depth, thickness_ratio=0.8):
-    """Estimate volume - your exact implementation"""
-    # Assume roughly spheroid/ellipsoid: volume = area * thickness
-    # thickness_ratio is a heuristic (typically 0.6-1.0 for roundish fruits)
-    thickness = np.sqrt(area_m2) * thickness_ratio
-    volume = area_m2 * thickness  # m^3
-    return volume
-
-def estimate_weights_from_yolo_results(image, yolo_result, co2_data):
+def estimate_weights_from_yolo_results(image, yolo_result, co2_data, camera_fov=60, scale_factor=1.0):
     """
-    Main function using your exact weight estimation logic
+    Enhanced weight estimation using DIVESPOT-inspired volume calculation - your exact approach
     
     Args:
         image: PIL Image or numpy array
         yolo_result: YOLO segmentation result object
         co2_data: DataFrame with food data including density
+        camera_fov: Horizontal field of view in degrees
+        scale_factor: Depth scale correction factor
     
     Returns:
-        dict: Results with individual weights for each mask
+        dict: Results with class names as keys and weight info as values
     """
     try:
         # Convert image to PIL if needed
@@ -139,19 +240,13 @@ def estimate_weights_from_yolo_results(image, yolo_result, co2_data):
             st.error("Depth estimation model not available")
             return {}
         
-        # Get depth map
-        with st.spinner("Estimating depth for weight calculation..."):
+        # Get depth map using Depth Anything V2
+        with st.spinner("Estimating depth for enhanced volume calculation..."):
             depth_out = depth_pipe(pil_image)
             depth_map = np.array(depth_out['depth'])
         
-        # Normalize depth to [0, 1] and scale to plausible depth range - your exact approach
-        depth_map = depth_map.astype(np.float32)
-        depth_map = (depth_map - depth_map.min()) / (depth_map.max() - depth_map.min())
-        min_depth, max_depth = 0.3, 2.0  # meters, adjust as needed - your exact values
-        depth_map = min_depth + depth_map * (max_depth - min_depth)
-        
-        # Create density lookup from co2_data
-        density_lookup = dict(zip(co2_data['Foodstuff'], co2_data['Density']))
+        # Get camera intrinsics
+        camera_intrinsics = get_camera_intrinsics(img_width, img_height, camera_fov)
         
         # Parse YOLO results into objects
         objects = parse_yolo_mask_from_results(yolo_result, img_width, img_height)
@@ -159,7 +254,7 @@ def estimate_weights_from_yolo_results(image, yolo_result, co2_data):
         if not objects:
             return {}
         
-        # Process each detected object - your exact logic
+        # Process each detected object
         results = {}
         individual_weights = {}  # Store individual mask weights
         
@@ -179,31 +274,34 @@ def estimate_weights_from_yolo_results(image, yolo_result, co2_data):
             if len(polygon) < 3:
                 continue
             
-            # Area in pixels - your exact calculation
-            area_px = polygon_area(polygon)
-            if area_px < 100:  # Skip very small objects
+            # Process depth map for this object - your exact function
+            processed_depth, mask = process_depth_map(depth_map, polygon, img_width, img_height, scale_factor)
+            
+            # Generate 3D point cloud for the object - your exact function
+            points_3d = depth_to_pointcloud(processed_depth, camera_intrinsics, mask)
+            
+            if len(points_3d) < 10:  # Skip if too few points
                 continue
             
-            # Estimate scale using depth - your exact function
-            median_depth = estimate_scale(depth_map, None, polygon)
+            # DIVESPOT-inspired volume estimation - your exact approach
+            # Try multiple methods and use the most reliable result
+            volumes = []
+            for method in ['convex_hull', 'voxel_grid']:
+                try:
+                    vol = estimate_volume_divespot(points_3d, method)
+                    if vol > 0:
+                        volumes.append(vol)
+                except:
+                    continue
             
-            # Real-world area (m^2) - your exact function
-            area_m2 = estimate_real_area(polygon, median_depth, img_width, img_height)
+            if not volumes:
+                continue
+                
+            # Use median volume for robustness - your exact approach
+            volume_m3 = np.median(volumes)
             
-            # Estimate volume (m^3) - your exact function
-            volume_m3 = estimate_volume(area_m2, median_depth)
-            
-            # Estimate weight (kg) - your exact approach
-            if class_name in density_lookup:
-                density = density_lookup[class_name]
-            else:
-                # Try to match with co2_data
-                matched = co2_data[co2_data['Foodstuff'].str.lower() == class_name.lower()]
-                if not matched.empty:
-                    density = matched['Density'].values[0]
-                else:
-                    density = 0.8  # Default density
-            
+            # Get density and calculate weight
+            density = get_density_for_class(class_name, co2_data)  # kg/m³
             weight_kg = volume_m3 * density
             weight_g = weight_kg * 1000
             
@@ -213,18 +311,27 @@ def estimate_weights_from_yolo_results(image, yolo_result, co2_data):
                 'class_name': class_name,
                 'weight_kg': weight_kg,
                 'weight_g': weight_g,
-                'area_px': area_px,
-                'area_m2': area_m2,
                 'volume_m3': volume_m3,
-                'depth': median_depth
+                'volume_cm3': volume_m3 * 1e6,
+                'points_3d_count': len(points_3d),
+                'methods_used': len(volumes)
             }
             
-            # Aggregate by class - your exact approach
+            # Aggregate results by class - your exact approach
             if class_name not in results:
-                results[class_name] = {'count': 0, 'weight_g': 0.0, 'weight_kg': 0.0}
+                results[class_name] = {
+                    'count': 0,
+                    'total_weight_g': 0.0,
+                    'weight_kg': 0.0,
+                    'avg_volume_cm3': 0.0,
+                    'volumes': []
+                }
+            
             results[class_name]['count'] += 1
-            results[class_name]['weight_g'] += weight_g
+            results[class_name]['total_weight_g'] += weight_g
             results[class_name]['weight_kg'] += weight_kg
+            results[class_name]['volumes'].append(volume_m3 * 1e6)  # Convert to cm³
+            results[class_name]['avg_volume_cm3'] = np.mean(results[class_name]['volumes'])
         
         # Store individual weights for detailed analysis
         results['_individual_weights'] = individual_weights
@@ -232,33 +339,31 @@ def estimate_weights_from_yolo_results(image, yolo_result, co2_data):
         return results
         
     except Exception as e:
-        st.error(f"Error in weight estimation: {str(e)}")
-        print(f"Detailed error in weight estimation: {e}")
+        st.error(f"Enhanced weight estimation error: {str(e)}")
+        print(f"Detailed error in enhanced weight estimation: {e}")
         return {}
 
-def estimate_weights_legacy(image_path, mask_txt_path, excel_path):
+def estimate_weights_legacy(image_path, mask_txt_path, excel_path, camera_fov=60, scale_factor=1.0):
     """
-    Your original function for file-based processing (exact copy)
+    Your original enhanced function for file-based processing (exact copy)
     """
     # Load image
     image = Image.open(image_path)
     img_width, img_height = image.size
-
-    # Load depth map
+    
+    # Load depth map using Depth Anything V2
     depth_pipe = pipeline(task="depth-estimation", model="depth-anything/Depth-Anything-V2-Small-hf")
     depth_out = depth_pipe(image)
     depth_map = np.array(depth_out['depth'])
-    # Normalize depth to [0, 1] and scale to a plausible depth range (e.g., 0.3-2.0m)
-    depth_map = depth_map.astype(np.float32)
-    depth_map = (depth_map - depth_map.min()) / (depth_map.max() - depth_map.min())
-    min_depth, max_depth = 0.3, 2.0  # meters, adjust as needed
-    depth_map = min_depth + depth_map * (max_depth - min_depth)
-
-    # Load class data
+    
+    # Get camera intrinsics
+    camera_intrinsics = get_camera_intrinsics(img_width, img_height, camera_fov)
+    
+    # Load density data
     class_data = pd.read_excel(excel_path)
     density_lookup = dict(zip(class_data['Foodstuff'], class_data['Density']))
-
-    # Parse mask file
+    
+    # Parse segmentation masks (your original function)
     def parse_yolo_mask(mask_txt_path, img_width, img_height):
         objects = []
         with open(mask_txt_path, 'r') as f:
@@ -270,31 +375,60 @@ def estimate_weights_legacy(image_path, mask_txt_path, excel_path):
             xy = [(int(x * img_width), int(y * img_height)) for x, y in zip(coords[::2], coords[1::2])]
             objects.append({'class_id': class_id, 'polygon': xy})
         return objects
-
+    
     objects = parse_yolo_mask(mask_txt_path, img_width, img_height)
-
-    # Aggregate results
+    
+    # Process each object
     results = {}
     for obj in objects:
         class_id = obj['class_id']
         class_name = id_to_class[class_id]
         polygon = obj['polygon']
-        # Area in pixels
-        area_px = polygon_area(polygon)
-        # Estimate scale using depth
-        median_depth = estimate_scale(depth_map, None, polygon)
-        # Real-world area (m^2)
-        area_m2 = estimate_real_area(polygon, median_depth, img_width, img_height)
-        # Estimate volume (m^3)
-        volume_m3 = estimate_volume(area_m2, median_depth)
-        # Estimate weight (kg)
-        density = density_lookup[class_name]
-        weight_kg = volume_m3 * density
-        weight_g = weight_kg * 1000
-        # Aggregate by class
-        if class_name not in results:
-            results[class_name] = {'count': 0, 'weight_g': 0.0}
-        results[class_name]['count'] += 1
-        results[class_name]['weight_g'] += weight_g
-
+        
+        # Process depth map for this object
+        processed_depth, mask = process_depth_map(depth_map, polygon, img_width, img_height, scale_factor)
+        
+        # Generate 3D point cloud for the object
+        points_3d = depth_to_pointcloud(processed_depth, camera_intrinsics, mask)
+        
+        if len(points_3d) < 10:  # Skip if too few points
+            continue
+        
+        # DIVESPOT-inspired volume estimation
+        # Try multiple methods and use the most reliable result
+        volumes = []
+        for method in ['convex_hull', 'voxel_grid']:
+            try:
+                vol = estimate_volume_divespot(points_3d, method)
+                if vol > 0:
+                    volumes.append(vol)
+            except:
+                continue
+        
+        if not volumes:
+            continue
+            
+        # Use median volume for robustness
+        volume_m3 = np.median(volumes)
+        
+        # Get density and calculate weight
+        if class_name in density_lookup:
+            density = density_lookup[class_name]  # kg/m³
+            weight_kg = volume_m3 * density
+            weight_g = weight_kg * 1000
+            
+            # Aggregate results
+            if class_name not in results:
+                results[class_name] = {
+                    'count': 0, 
+                    'total_weight_g': 0.0, 
+                    'avg_volume_cm3': 0.0,
+                    'volumes': []
+                }
+            
+            results[class_name]['count'] += 1
+            results[class_name]['total_weight_g'] += weight_g
+            results[class_name]['volumes'].append(volume_m3 * 1e6)  # Convert to cm³
+            results[class_name]['avg_volume_cm3'] = np.mean(results[class_name]['volumes'])
+    
     return results
