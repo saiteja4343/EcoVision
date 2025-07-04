@@ -1,7 +1,6 @@
 # app/Dockerfile
 
-#FROM python:3.12-slim
-FROM ubuntu:latest
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -12,12 +11,7 @@ RUN apt-get update && apt-get install -y \
     git \
     libgl1 \
     libgomp1 \
-    python3-pip \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Open3D from the PyPI repositories
-RUN python3 -m pip install --no-cache-dir --upgrade pip && \
-    python3 -m pip install --no-cache-dir --upgrade open3d
 
 COPY ./ ./
 
