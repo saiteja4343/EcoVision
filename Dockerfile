@@ -7,10 +7,8 @@ RUN apt-get update && apt-get install -y \
     curl \
     software-properties-common \
     git \
-    libegl1 \
     libgl1 \
     libgomp1 \
-    # python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
 # # Create virtual environment
