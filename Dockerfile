@@ -1,5 +1,3 @@
-# app/Dockerfile
-
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -9,14 +7,20 @@ RUN apt-get update && apt-get install -y \
     curl \
     software-properties-common \
     git \
+    libegl1 \
     libgl1 \
     libgomp1 \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-COPY ./ ./
+# Create virtual environment
+RUN python3 -m venv /opt/venv
 
-# Upgrade pip to it's latest version
-RUN python -m pip install open3d-cpu --no-cache-dir 
+# Set environment variables to activate venv
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+COPY ./ ./
 
 RUN pip install -r requirements.txt
 
