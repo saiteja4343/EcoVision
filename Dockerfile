@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
 COPY ./ ./
 
 # Upgrade pip to it's latest version
-RUN python3 -m pip install --upgrade pip
+RUN python -m pip install open3d-cpu --no-cache-dir 
 
 RUN pip install -r requirements.txt
 
