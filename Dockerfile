@@ -15,7 +15,10 @@ RUN apt-get update && apt-get install -y \
 
 COPY ./ ./
 
-RUN pip3 install -r requirements.txt
+# Upgrade pip to it's latest version
+RUN python3 -m pip install --upgrade pip
+
+RUN pip install -r requirements.txt
 
 EXPOSE 8501
 
