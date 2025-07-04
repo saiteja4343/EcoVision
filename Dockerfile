@@ -10,15 +10,15 @@ RUN apt-get update && apt-get install -y \
     libegl1 \
     libgl1 \
     libgomp1 \
-    python3-pip \
+    # python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-# Create virtual environment
-RUN python3 -m venv /opt/venv
+# # Create virtual environment
+# RUN python3 -m venv /opt/venv
 
-# Set environment variables to activate venv
-ENV VIRTUAL_ENV=/opt/venv
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+# # Set environment variables to activate venv
+# ENV VIRTUAL_ENV=/opt/venv
+# ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 COPY ./ ./
 
