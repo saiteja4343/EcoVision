@@ -22,8 +22,8 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 COPY ./ ./
 
-# Install Open3D from the PyPI repositories
-RUN pip install --no-cache-dir --upgrade open3d
+# # Install Open3D from the PyPI repositories
+# RUN pip install --no-cache-dir --upgrade open3d
 
 RUN pip install -r requirements.txt
 
