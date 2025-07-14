@@ -22,6 +22,7 @@ COPY ./ ./
 
 # # Install Open3D from the PyPI repositories
 # RUN pip install --no-cache-dir --upgrade open3d
+#  temp
 
 RUN pip install -r requirements.txt
 
