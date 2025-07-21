@@ -8,21 +8,9 @@ RUN apt-get update && apt-get install -y \
     software-properties-common \
     git \
     libgl1 \
-    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# # Create virtual environment
-# RUN python3 -m venv /opt/venv
-
-# # Set environment variables to activate venv
-# ENV VIRTUAL_ENV=/opt/venv
-# ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-
 COPY ./ ./
-
-# # Install Open3D from the PyPI repositories
-# RUN pip install --no-cache-dir --upgrade open3d
-#  temp
 
 RUN pip install -r requirements.txt
 

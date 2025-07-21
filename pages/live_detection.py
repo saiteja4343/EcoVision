@@ -18,21 +18,7 @@ def live_detection_page(model, confidence, class_filter, co2_data, detection_typ
     # Display detection type info with enhanced weight estimation method
     st.header("Capture and Process")
     
-    # Show detection type specific info with enhanced processing details
-    if detection_type == "Segmentation":
-        st.info("🎯 **Enhanced Segmentation Mode**: Using DIVESPOT-inspired 3D point cloud analysis for precise weight estimation")
-        st.markdown("""
-        **Enhanced Weight Estimation Process:**
-        - 🔍 **Segmentation**: Pixel-level food boundary detection
-        - 📏 **Depth Analysis**: Depth-Anything-V2-Small-hf model (0.2-3.0m range)
-        - 🎥 **Camera Calibration**: Dynamic intrinsic parameter calculation
-        - ☁️ **Point Cloud Generation**: 3D point cloud from depth + camera intrinsics
-        - 📐 **Volume Estimation**: Multiple methods (Convex Hull, Voxel Grid, Alpha Shape)
-        - ⚖️ **Weight Calculation**: Volume × Food Density with robust median filtering
-        - 🌱 **CO₂ Calculation**: Enhanced Weight × CO₂ Factor
-        """)
-    else:
-        st.info("📦 **Standard Detection Mode**: Using average weights for quick estimation")
+    
     
     handle_capture_webrtc_process(model, confidence, class_filter, co2_data, detection_type)
 
@@ -92,13 +78,8 @@ def handle_capture_webrtc_process(model, confidence, class_filter, co2_data, det
 
         frame = st.session_state.webrtc_emissions['captured_frame']
 
-        # Show different processing messages based on detection type
-        if detection_type == "Segmentation":
-            processing_message = "🧠 Processing with DIVESPOT-inspired 3D volume estimation..."
-        else:
-            processing_message = "⚡ Processing with standard detection and average weights..."
-            
-        with st.spinner(processing_message):
+        # Simple processing message without mode details
+        with st.spinner("Processing image..."):
             results, output = process_image(frame, model, confidence, class_filter, co2_data, detection_type)
 
         if results is not None and output is not None:
@@ -115,24 +96,7 @@ def handle_capture_webrtc_process(model, confidence, class_filter, co2_data, det
             if not emissions_df.empty:
                 st.subheader("🌱 Carbon Emissions Report")
                 
-                # Display method-specific information
-                if detection_type == "Segmentation":
-                    st.success("✨ **Enhanced Analysis**: Weight calculated using DIVESPOT-inspired 3D point cloud volume estimation")
-                    
-                    # Show enhanced weight estimation details if available
-                    if hasattr(results, 'estimated_weights') and results.estimated_weights:
-                        individual_weights = results.estimated_weights.get('_individual_weights', {})
-                        if individual_weights:
-                            st.markdown("**Enhanced Weight Estimation Details:**")
-                            for mask_id, info in individual_weights.items():
-                                st.markdown(f"• **{mask_id}**: {info['weight_g']:.1f}g (vol: {info['volume_cm3']:.1f}cm³, 3D points: {info['points_3d_count']}, methods: {info['methods_used']})")
-                        
-                        st.markdown("**Total Weight per Class:**")
-                        for food, info in results.estimated_weights.items():
-                            if food != '_individual_weights':
-                                st.markdown(f"• **{food}**: {info['total_weight_g']:.1f}g total from {info['count']} mask(s) (avg vol: {info['avg_volume_cm3']:.1f}cm³)")
-                else:
-                    st.info("📊 **Standard Analysis**: Weight estimated using database average weights")
+                
                 
                 # Format dataframe differently based on detection type
                 if detection_type == "Segmentation":
